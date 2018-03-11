@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8" />
+		<title></title>
+	</head>
+
+	<body>
+		<canvas id="container" width="380" height="500"></canvas>
+	</body>
+	<script type="text/javascript">
+		var canvas = document.getElementById("container");
+		var ctx = canvas.getContext("2d");
+
+		//创建背景图片
+		var bgReady = false;
+		var bgImage = new Image();
+		bgImage.onload = function() {
+			bgReady = true;
+		}
+		bgImage.src = "img/bg3_0.jpg";
+		//创建战机模型
+		var fire_frequency = 200;
+		var heroReady = false;
+		var heroImage = new Image();
+		heroImage.onload = function() {
+			heroReady = true;
+		}
+		heroImage.src = "img/smallplane_cover.png";
+		//创建炮弹模型
+
+		var weaponReady = false;
+		var weaponImage = new Image();
+		weaponImage.onload = function() {
+			weaponReady = true;
+		}
+		weaponImage.src = "img/p-f02.png";
+		//创建敌人模型
+		var enemyReady = false;
+		var enemyImage = new Image();
+		enemyImage.onload = function() {
+			enemyReady = true;
+		}
+		enemyImage.src = "img/img_plane_enemy.png";
+		//创建加成道具模型
+		var additionReady = false;
+		var additionImage = new Image();
+		additionImage.onload = function(){
+			additionReady = true;
+		}
+		additionImage.src = "img/img_item.png";
+		//初始化分数
+		var score = 0;
+		//定义背景的基本属性
+		var bg = {
+			speed: 100,
+			x: 0,
+			y: 0,
+			height: 854
+		}
+
+		//定义战机基本属性
+		var hero = {
+			firepower: 1,
+			speed: 246,
+			width: 39,
+			height: 75,
+			x: canvas.width / 2 - 18,
+			y: canvas.height + 60
+		}
+		//定义武器基本属性
+		var weapon = {
+			speed: 300,
+			width: 23,
+			height: 50,
+			x: hero.x,
+			y: hero.y
+		}
+		//将子弹、背景、敌人保存
+		var weapon_arr = [];
+		var bg_arr = [];
+		var enemy_arr = [];
+		var addition_arr = [];  //战机增益道具
+		//按键事件处理
+		var keysDown = [];
+		addEventListener("keydown", function(e) {
+			keysDown[e.keyCode] = true;
+		}, false);
+		addEventListener("keyup", function(e) {
+			delete keysDown[e.keyCode];
+		}, false);
+		//初始化游戏页面
+		var init = function() {
+			bg_add();
+			bg_arr.push({
+				speed: 100,
+				act: 1,
+				x: 0,
+				y: 0
+			});
+			bg_arr.push({
+				speed: 100,
+				act: 0,
+				x: 0,
+				y: -bg.height
+			});
+
+			//这只是测试数据，后期有专门的生成函数
+			//			enemy_arr.push({
+			//				x: 70,
+			//				y: 90,
+			//				speed: 50,
+			//				width: 38,
+			//				height: 26,
+			//				hp:5
+			//			});
+		};
+		//刷新页面
+		var update = function(modifier) {
+			//子弹和敌人碰撞判断
+			(function() {
+				for(var i = 0; i < enemy_arr.length; i++)
+					for(var j = 0; j < weapon_arr.length; j++) {
+						if(
+							enemy_arr[i].x < weapon_arr[j].x + weapon_arr[j].width &&
+							enemy_arr[i].x + enemy_arr[i].width > weapon_arr[j].x &&
+							enemy_arr[i].y + enemy_arr[i].height > weapon_arr[j].y &&
+							enemy_arr[i].y < weapon_arr[j].y + weapon_arr[j].height
+						) {
+							weapon_arr[j].y = -weapon.height - 10;
+							enemy_arr[i].hp--;
+							if(enemy_arr[i].hp <= 0) {
+								enemy_arr[i].x = -10000;
+								score++;
+//								(function() {
+//									if(score == 2) {
+//										reinforce();
+//									}
+//									if(score == 5) {
+//										reinforce();
+//									}
+//								})();       //得分自动加强火力
+							}
+						}
+
+					}
+			})();
+			//战机与增益道具碰撞判断
+			(function(){
+				for(var i = 0; i < addition_arr.length; i++) {
+					if(
+						addition_arr[i].x < hero.x + hero.width &&
+						addition_arr[i].x + addition_arr[i].width > hero.x &&
+						addition_arr[i].y + addition_arr[i].height > hero.y &&
+						addition_arr[i].y < hero.y + hero.height-30
+					) {
+						addition_arr.shift();
+						reinforce();
+					}
+				}
+			})();
+			//战机与敌人碰撞判断
+			(function() {
+
+				for(var i = 0; i < enemy_arr.length; i++) {
+					if(
+						enemy_arr[i].x < hero.x + hero.width &&
+						enemy_arr[i].x + enemy_arr[i].width > hero.x &&
+						enemy_arr[i].y + enemy_arr[i].height > hero.y &&
+						enemy_arr[i].y < hero.y + hero.height-30
+					) {
+						alert("gg了")
+					}
+				}
+			})();
+			//进入游戏是战机从底下飞入
+			if(hero.y > canvas.height - (hero.height - 15)){
+				hero.y -= hero.speed * modifier/5;
+			}else{
+				//初始化完成后进入操作
+				if(38 in keysDown && hero.y > 0) {
+					hero.y -= hero.speed * modifier;
+				}
+				if(39 in keysDown && hero.x < canvas.width - hero.width) {
+					hero.x += hero.speed * modifier;
+				}
+				if(40 in keysDown && hero.y < canvas.height - (hero.height - 15)) {
+					hero.y += hero.speed * modifier;
+				}
+				if(37 in keysDown && hero.x > 0) {
+					hero.x -= hero.speed * modifier;
+				}
+			}
+			(function() {
+				for(var i = 0; i < weapon_arr.length; i++) {
+					weapon_arr[i].y -= weapon_arr[i].speed * modifier;
+				}
+			})();
+			(function() {
+				for(var i = 0; i < enemy_arr.length; i++) {
+					enemy_arr[i].x += enemy_arr[i].speed_x * modifier;
+					enemy_arr[i].y += enemy_arr[i].speed_y * modifier;
+				}
+			})();
+			(function() {
+				for(var i = 0; i < bg_arr.length; i++) {
+					bg_arr[i].y += bg_arr[i].speed * modifier;
+				}
+			})();
+
+			//在背景出现空白并且处于渲染前，添加新的背景
+			if(bg_arr[1].y > 0) {
+				bg_add();
+				bg_arr[1].act = 1;
+				bg_arr.shift();
+			}
+
+			//飞出的子弹删除
+			if(weapon_arr[0] && weapon_arr[0].y < -weapon.height) {
+				weapon_arr.shift();
+
+			}
+
+		}
+		//移动的背景图片
+		var bg_add = function() {
+			var bgY = bg_arr[1] ? bg_arr[1].y : 0;
+			bg_arr.push({
+				speed: bg.speed,
+				act: 0,
+				x: 0,
+				y: bgY - bg.height
+			});
+		}
+		//添加敌人
+		var add_enemy = function(x, y, speed_x, speed_y, hp) {
+			enemy_arr.push({
+				x: x,
+				y: y,
+				speed_x: speed_x,
+				speed_y: speed_y,
+				width: 38,
+				height: 26,
+				hp: hp
+			});
+		}
+		//添加增益道具
+		var add_addition = function(kind,sx,sy,swidth,sheight,x,y,width,heigth){
+			
+			addition_arr.push({
+				kind: kind,
+				sx: sx,
+				sy: sy,
+				swidth: swidth,
+				sheight: sheight,
+				x: x,
+				y: y,
+				width: width,
+				height: heigth
+			})
+		}
+		//定义一局游戏出现的敌人
+		var enemy_init = function() {
+			var t = 1000;
+			var d = 1000;
+			var delta = 3000;
+			for(var i = 0; i < 9; i++) {
+				setTimeout(function() {
+					add_enemy(-30, 20, 30, 40, 2);      //=========(起点x，起点y，x方向移速，y方向移速，血量)
+				}, t);
+				t += d;
+			}
+			setTimeout(function(){
+				add_addition(1, 0, 0, 129, 105, Math.random()*380, Math.random()*250+210, 52, 42);//第一个参数1表示增加子弹数
+			},t);
+			t += delta*2;
+			
+			setTimeout(function() {
+				for(var i = 0; i < 9; i++) {
+				console.log(canvas.x);
+				add_enemy(i*40, 20, 0, 70, 5);      //=========(起点x，起点y，x方向移速，y方向移速，血量)
+				}
+			}, t);
+			t += d;
+		
+		}
+		//火力加强
+		var reinforce = function() {
+			hero.firepower++;
+			weapon.width = hero.firepower * 23;
+			console.log(weapon.width)
+		}
+		//添加子弹
+		var fire = function(firepower) {
+			if(firepower === 1) {
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + (hero.width - weapon.width) / 2,
+					y: hero.y - weapon.height
+				});
+			}
+			if(firepower === 2) {
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + (hero.width - weapon.width) / 2,
+					y: hero.y - weapon.height
+				});
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + (hero.width) / 2,
+					y: hero.y - weapon.height
+				});
+			}
+			if(firepower === 3) {
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + hero.width / 2 - weapon.width * 0.5 - (weapon.width / 6),
+					y: hero.y - weapon.height
+				});
+
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + hero.width / 2 - (weapon.width / 6),
+					y: hero.y - weapon.height
+				});
+				weapon_arr.push({
+					speed: weapon.speed,
+					width: weapon.width,
+					height: weapon.height,
+					x: hero.x + hero.width / 2 + weapon.width * 0.5 - (weapon.width / 6),
+					y: hero.y - weapon.height
+				});
+			}
+		}
+		//渲染页面
+		var render = function() {
+			if(bgReady) {
+				(function() {
+					for(var i = 0; i < bg_arr.length; i++) {
+						ctx.drawImage(bgImage, 0, bg_arr[i].y);
+					}
+				})();
+			}
+			if(heroReady) {
+
+				ctx.drawImage(heroImage, hero.x, hero.y);
+
+			}
+			if(additionReady) {
+				for(var i=0;i<addition_arr.length;i++){
+					ctx.drawImage(additionImage, addition_arr[i].sx, addition_arr[i].sy, addition_arr[i].swidth, addition_arr[i].sheight, addition_arr[i].x, addition_arr[i].y, addition_arr[i].width, addition_arr[i].height);
+				}
+			}
+			if(weaponReady) {
+				(function() {
+					for(var i = 0; i < weapon_arr.length; i++) {
+
+						ctx.drawImage(weaponImage, 0, 0, 23, 50, weapon_arr[i].x, weapon_arr[i].y, 23, 50);
+
+					}
+				})();
+			}
+			if(enemyReady) {
+				(function() {
+					for(var i = 0; i < enemy_arr.length; i++) {
+						ctx.drawImage(enemyImage, 0, 230, 190, 133, enemy_arr[i].x, enemy_arr[i].y, 38, 26);
+					}
+				})();
+			}
+
+		}
+		//及时器
+		var deltaFun = function(de) {
+			var delta_now = Date.now();
+			if(delta_now - delta_then > de) {
+
+				delta_then = delta_now;
+
+				return true;
+			}
+			return false;
+		}
+
+		//主函数
+
+		var main = function() {
+			var now = Date.now();
+			var delta = now - then;
+			if(deltaFun(fire_frequency)) {
+				fire(hero.firepower);
+			}
+
+			update(delta / 1000);
+			render();
+			then = now;
+			requestAnimationFrame(main);
+		}
+
+		//游戏启动函数
+		var then = Date.now();
+		var delta_then = then;
+		init();
+
+		fire();
+		enemy_init();
+		main();
+		
+		
+	</script>
+
+</html>
